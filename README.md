@@ -99,7 +99,22 @@ Example:
 curl -X GET http://localhost/7e3d3df939
 ```
 
-Notes
+## Test
+To see the result of the test run:
+
+```
+docker-compose logs test
+```
+
+Output:
+
+```
+shorter-app-test-1  | Average response time: 2.04 ms
+shorter-app-test-1  | Percentage of requests less than 10ms: 100.00%
+shorter-app-test-1  | Total time: 2.31 seconds
+```
+
+## Notes
 The shortened URLs are valid for 24 hours only, after which they are automatically deleted from the Redis database.
 The application runs on port 8080 by default. If you need to change the port, you can modify the docker-compose.yml file accordingly.
 The Redis server runs on port 6379 by default. If you need to change the Redis configuration, you can modify the docker-compose.yml file accordingly.
