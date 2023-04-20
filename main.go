@@ -25,6 +25,17 @@ func main() {
 		DB:   0,
 	})
 
+	// middleware to get simple stats
+	middle := func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			endpoint := c.Path()
+			rdb.Incr(c.Request().Context(), "stats:"+endpoint)
+			return next(c)
+		}
+	}
+
+	e.Use(middle)
+
 	// Work endpoints
 	e.POST("/shorten", func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -46,7 +57,7 @@ func main() {
 			if err := rdb.Set(ctx, shortUrl, url.LongUrl, 24*time.Hour).Err(); err != nil {
 				return err
 			}
-			url.ShortUrl = fmt.Sprintf("http://localhost:8080/%s", hash[:10])
+			url.ShortUrl = fmt.Sprintf("http://localhost/%s", hash[:10])
 
 		} else if err != nil {
 			return err
@@ -59,27 +70,48 @@ func main() {
 		ctx := c.Request().Context()
 		shortUrl := c.Param("short_url")
 
+		switch shortUrl {
 		// Health endpoints
-		if shortUrl == "redis" {
+		case "redis":
 			info, err := rdb.Info(ctx).Result()
 			if err != nil {
 				return c.String(http.StatusInternalServerError, "Redis is not available")
 			}
 
 			return c.String(http.StatusOK, info)
-		} else if shortUrl == "health" {
+		case "health":
 			return c.String(http.StatusOK, "Shorten App is healthy!")
-		}
+		case "stats":
+			keys, err := rdb.Keys(ctx, "stats:*").Result()
+			if err != nil {
+				return err
+			}
 
-		longUrl, err := rdb.Get(ctx, shortUrl).Result()
-		if err == redis.Nil {
-			//redirect to meli's 404 page
-			return c.Redirect(http.StatusMovedPermanently, "https://www.mercadolibre.com.mx/dsagdfasgfdagdfgdfg")
-		} else if err != nil {
-			return err
-		}
+			stats := make(map[string]int64)
 
-		return c.Redirect(http.StatusMovedPermanently, longUrl)
+			for _, key := range keys {
+				count, err := rdb.Get(ctx, key).Int64()
+				if err != nil {
+					return err
+				}
+
+				endpoint := key[len("stats:"):]
+				stats[endpoint] = count
+			}
+
+			return c.JSON(http.StatusOK, stats)
+		default:
+
+			longUrl, err := rdb.Get(ctx, shortUrl).Result()
+			if err == redis.Nil {
+				//redirect to 404 page
+				return c.File("404.html")
+			} else if err != nil {
+				return err
+			}
+
+			return c.Redirect(http.StatusMovedPermanently, longUrl)
+		}
 	})
 
 	e.DELETE("/:short_url", func(c echo.Context) error {

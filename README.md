@@ -30,7 +30,7 @@ cd shorten-app
 Start the containers:
 
 ```
-docker-compose up
+docker-compose up --scale app=3
 ```
 
 Open Postman or a similar HTTP client and test the endpoints (see below).
@@ -43,7 +43,7 @@ Returns information about the Redis server, including version, uptime, memory us
 Example:
 
 ```
-curl -X GET http://localhost:8080/redis
+curl -X GET http://localhost/redis
 ```
 
 ### GET /health
@@ -52,7 +52,16 @@ Returns a simple message indicating that the Shorten App is healthy.
 Example:
 
 ```
-curl -X GET http://localhost:8080
+curl -X GET http://localhost/health
+```
+
+### GET /stats
+Returns a simple service usage statistics.
+
+Example:
+
+```
+curl -X GET http://localhost/stats
 ```
 
 ### POST /shorten
@@ -71,14 +80,14 @@ Response body:
 ```
 {
     "long_url": "https://www.example.com/some/long/path/to/a/page",
-    "short_url": "http://localhost:8080/7e3d3df939"
+    "short_url": "http://localhost/7e3d3df939"
 }
 ```
 
 Example:
 
 ```
-curl -X POST -H "Content-Type: application/json" -d '{"long_url": "https://www.example.com/some/long/path/to/a/page"}' http://localhost:8080/shorten
+curl -X POST -H "Content-Type: application/json" -d '{"long_url": "https://www.example.com/some/long/path/to/a/page"}' http://localhost/shorten
 ```
 
 ### GET /:short_url
@@ -87,7 +96,7 @@ Redirects the user to the original URL associated with the given shortened URL.
 Example:
 
 ```
-curl -X GET http://localhost:8080/7e3d3df939
+curl -X GET http://localhost/7e3d3df939
 ```
 
 Notes
